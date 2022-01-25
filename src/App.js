@@ -1,11 +1,11 @@
 import './App.css';
-import Table from './pages/Table'
+import Stats from './pages/Stats'
 
 function App() {
   return (
     <div className="App">
-     <h1>Star Wars</h1>
-     <Table/>
+      <h1>Star Wars</h1>
+      <Stats />
     </div>
   );
 }

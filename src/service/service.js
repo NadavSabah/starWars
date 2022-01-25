@@ -1,9 +1,10 @@
 
 
+// Helpers
 const getSingularData = async (endpoint) => {
     let res = await fetch(endpoint)
     let data = await res.json()
-        
+
     return data
 }
 
@@ -13,46 +14,53 @@ const getPluralData = async (endpoint) => {
     let res = await fetch(url)
     let data = await res.json()
 
-    return  data
+    let allData = data.results
+
+    if (data.next) {
+        let nextPagesData = await getNextPageData(data.next, data.results)
+        allData = [...data.results, ...nextPagesData]
+    }
+    return allData
 }
 
-const rateTheVehicles =  (unSortedList) => { return unSortedList.sort((a,b) => b.sumPopulation - a.sumPopulation)}
+const rateTheVehicles = (unSortedList) => { return unSortedList.sort((a, b) => b.sumPopulation - a.sumPopulation) }
 
 const arrangeBarChartData = (data) => {
     const barChartData = []
     const cityNames = []
-      data.map(singleData =>{  singleData.planets.filter( planet => {
-        
-        if(cityNames.indexOf(planet.name) === -1 && planet.population !== 'unknown' ) barChartData.push(planet)
-        cityNames.push(planet.name)
+    data.map(singleData => {
+        singleData.planets.filter(planet => {
+
+            if (cityNames.indexOf(planet.name) === -1 && planet.population !== 'unknown') barChartData.push(planet)
+            cityNames.push(planet.name)
+        })
+
     })
-    
-})
 
     return barChartData
 }
 
 const removeIrelevant = (data) => {
-    data.forEach((element , i , arr) => {
-        for(let idx = element.planets.length -1; idx >= 0; idx--){
-            
+    data.forEach((element, i, arr) => {
+        for (let idx = element.planets.length - 1; idx >= 0; idx--) {
+
             let planet = element.planets[idx]
-            if(planet.population === 'unknown') {
-                    
-                arr[i].planets.splice(idx,1)
-                if (arr[i].planets.length === 0) arr.splice(i,1)
+            if (planet.population === 'unknown') {
+
+                arr[i].planets.splice(idx, 1)
+                if (arr[i].planets.length === 0) arr.splice(i, 1)
             }
         }
-})
-return data 
+    })
+    return data
 }
 
 const removeIrrelevantFromVheicles = (data) => {
-    return data.filter(( vehicle , i) => vehicle.pilots.length && data.indexOf(vehicle) === i)    
+    return data.filter((vehicle, i) => vehicle.pilots.length && data.indexOf(vehicle) === i)
         .map(vehicle => {
             return {
-                pilots: vehicle.pilots.map(url => {return {url:url} }),
-                vehicle: { url:vehicle.url, name:vehicle.name },
+                pilots: vehicle.pilots.map(url => { return { url: url } }),
+                vehicle: { url: vehicle.url, name: vehicle.name },
                 planets: [],
                 sumPopulation: 0
             }
@@ -68,20 +76,15 @@ const getNextPageData = async (endpoint, prevData) => {
     return [...prevData, ...data.results]
 }
 
-
+// End of Helpers 
 
 
 
 const getVehicles = async () => {
 
-    let  data = await getPluralData('vehicles')
-    let allData = data.results 
+    let allData = await getPluralData('vehicles')
 
-    if (data.next) {
-        let nextPagesData = await getNextPageData(data.next, data.results)
-        allData = [...data.results, ...nextPagesData]
-    }
-       
+
     let vehiclesList = removeIrrelevantFromVheicles(allData)
     return await getPilotsRelatedToVehicles(vehiclesList)
 
@@ -90,19 +93,19 @@ const getVehicles = async () => {
 
 const getPilotsRelatedToVehicles = async (vehiclesList) => {
 
-    const setPlanetsUrl = vehiclesList.map(async ({pilots,planets}) => {
+    const setPlanetsUrl = vehiclesList.map(async ({ pilots, planets }) => {
 
         return await Promise.all(pilots.map(async (pilot) => {
 
             let data = await getSingularData(pilot.url)
             pilot.name = data.name
-            if (planets.indexOf(data.homeworld) === -1) planets.push({url: data.homeworld,})
-            
+            if (planets.indexOf(data.homeworld) === -1) planets.push({ url: data.homeworld, })
+
         }))
     })
 
     await Promise.all(setPlanetsUrl)
-   return  await getPlanets(vehiclesList)
+    return await getPlanets(vehiclesList)
 }
 
 
@@ -110,9 +113,9 @@ const getPlanets = async (vehiclesList) => {
 
     const addingPlanets = vehiclesList.map(async (vehicle) => {
         return await Promise.all(vehicle.planets.map(async (planet) => {
-        
-            let data = await getSingularData(planet.url )
- 
+
+            let data = await getSingularData(planet.url)
+
             vehicle.sumPopulation += parseInt(data.population)
             planet.population = data.population
             planet.name = data.name
@@ -129,7 +132,7 @@ const getPlanets = async (vehiclesList) => {
 
 
 
-export const getData = async () => {return await getVehicles()}
+export const getData = async () => { return await getVehicles() }
 
 
 
@@ -143,4 +146,3 @@ export const getData = async () => {return await getVehicles()}
 
 
 
- 
